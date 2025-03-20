@@ -10,20 +10,19 @@ get_color_hex() {
     local color_index=$1
     local result
     
-    # Use stty to save/restore terminal settings
-    saved_stty=$(stty -g)
-    stty raw -echo min 0 time 0
-    
-    # Query the color
-    printf "\033]4;%s;?\033\\" "$color_index" > /dev/tty
-    read -r result < /dev/tty
-    
-    # Restore terminal settings
-    stty "$saved_stty"
+    if [ -t 0 ]; then  # Only modify stty if running in a terminal
+        saved_stty=$(stty -g)
+        stty raw -echo min 0 time 0
+        printf "\033]4;%s;?\033\\" "$color_index" > /dev/tty
+        read -r result < /dev/tty
+        stty "$saved_stty"
+    else
+        printf "\033]4;%s;?\033\\" "$color_index"
+        read -r result
+    fi
     
     # Parse the color response
     if [[ $result =~ rgb:([0-9a-fA-F]+)/([0-9a-fA-F]+)/([0-9a-fA-F]+) ]]; then
-        # Extract and standardize hex values
         r=$(printf "%02s" "${BASH_REMATCH[1]}" | tr ' ' '0')
         g=$(printf "%02s" "${BASH_REMATCH[2]}" | tr ' ' '0')
         b=$(printf "%02s" "${BASH_REMATCH[3]}" | tr ' ' '0')
@@ -58,3 +57,4 @@ print_color_blocks() {
 
 # Print background colors
 print_color_blocks
+
